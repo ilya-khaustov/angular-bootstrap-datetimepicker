@@ -47,6 +47,60 @@
             this[prop] = arguments[0][prop];
           }
         }
+
+        this.isCurrent = function(periodView, periodNames) {
+          if (!periodNames || !periodNames.length) {
+            return false;
+          }
+
+          if (periodNames.indexOf(periodView) > -1) {
+            var minValue = new Date(),
+                maxValue = new Date(minValue),
+                tzOffsetMinutes = minValue.getTimezoneOffset(),
+                tzOffsetMs = tzOffsetMinutes * 60 * 1000;
+
+            if (periodView === 'day') {
+
+              minValue.setHours(0, 0, 0, 0);
+
+              maxValue.setHours(23, 59, 59, 999);
+
+            } else if (periodView === 'year') {
+
+              minValue.setMonth(0, 1);
+              minValue.setHours(0, 0, 0, 0);
+
+              maxValue.setMonth(11, 31);
+              maxValue.setHours(23, 59, 59, 999);
+
+            } else if (periodView === 'month') {
+
+              minValue.setDate(1);
+              minValue.setHours(0, 0, 0, 0);
+
+              maxValue.setDate(moment(maxValue).daysInMonth());
+              maxValue.setHours(23, 59, 59, 999);
+
+            } else if (periodView === 'hour') {
+
+              minValue.setHours(minValue.getHours(), 0, 0, 0);
+
+              maxValue.setHours(maxValue.getHours(), 59, 59, 999);
+
+            } else if (periodView === 'minute') {
+
+              minValue.setHours(minValue.getHours(), minValue.getMinutes(), 0, 0);
+
+              maxValue.setHours(maxValue.getHours(), maxValue.getMinutes(), 59, 999);
+
+            }
+
+            if (this.dateValue >= (minValue.getTime() - tzOffsetMs) &&
+                this.dateValue <= (maxValue.getTime() - tzOffsetMs) ) {
+              return true;
+            }
+          }
+        };
       }
 
       var validateConfiguration = function validateConfiguration(configuration) {
@@ -113,7 +167,12 @@
         '           <td colspan="7" >' +
         '              <span    class="{{ data.currentView }}" ' +
         '                       data-ng-repeat="dateObject in data.dates"  ' +
-        '                       data-ng-class="{active: dateObject.active, past: dateObject.past, future: dateObject.future, disabled: !dateObject.selectable}" ' +
+        '                       data-ng-class="{ ' +
+        '                          active: dateObject.active, ' +
+        '                          past: dateObject.past, ' +
+        '                          future: dateObject.future, ' +
+        '                          today: dateObject.isCurrent(data.currentView, showCurrent), ' +
+        '                          disabled: !dateObject.selectable}" ' +
         '                       data-ng-click="changeView(data.nextView, dateObject, $event)">{{ dateObject.display }}</span> ' +
         '           </td>' +
         '       </tr>' +
@@ -121,13 +180,22 @@
         '           <td data-ng-repeat="dateObject in week.dates" ' +
         '               data-ng-click="changeView(data.nextView, dateObject, $event)"' +
         '               class="day" ' +
-        '               data-ng-class="{active: dateObject.active, past: dateObject.past, future: dateObject.future, disabled: !dateObject.selectable}" >{{ dateObject.display }}</td>' +
+        '               data-ng-class="{' +
+        '                  active: dateObject.active,' +
+        '                  past: dateObject.past,' +
+        '                  future: dateObject.future,' +
+        '                  disabled: !dateObject.selectable,' +
+        '                  today: dateObject.isCurrent(data.currentView, showCurrent)' +
+        '                }">' +
+        '                  {{ dateObject.display }}' +
+        '            </td>' +
         '       </tr>' +
         '   </tbody>' +
         '</table></div>',
         scope: {
           onSetTime: '&',
-          beforeRender: '&'
+          beforeRender: '&',
+          showCurrent: '='
         },
         replace: true,
         link: function link(scope, element, attrs, ngModelController) {
