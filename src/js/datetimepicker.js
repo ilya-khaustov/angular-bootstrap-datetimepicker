@@ -200,6 +200,8 @@
         replace: true,
         link: function link(scope, element, attrs, ngModelController) {
 
+          scope.showCurrent = scope.showCurrent || ['year','month','day','hour','minute'];
+
           var directiveConfig = {};
 
           if (attrs.datetimepickerConfig) {
